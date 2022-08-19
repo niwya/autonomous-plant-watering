@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiManager.h>
 
 // Declare the pins used
 static const uint8_t loadPin = 32;
@@ -9,7 +11,7 @@ static const int delayWatering = 30; // [s]
 // Desired watering time
 static const int durationWatering = 1; // [s]
 
-// 
+// Constants
 static const int sToMilisec = 1000;
 static const int sToMicrosec = 1000000;
 
@@ -24,6 +26,25 @@ void waterPlant(const int duration, const int pin){
   digitalWrite(pin, HIGH);
   delay(duration);
   digitalWrite(pin, LOW);
+};
+
+void setupWiFi() {
+  // Set mode
+  WiFi.mode(WIFI_STA);
+  Serial.begin(9600);
+  // Local initialization
+  WiFiManager wm;
+  // Wipe stored credentials for testing, comment for production
+  wm.resetSettings();
+  // Connect to access point using password
+  bool res;
+  res = wm.autoConnect("AutoConnectAP", "password");
+  if (!res) {
+    Serial.print("Not connected to WiFi");
+  }
+  else {
+    Serial.print("Connected to WiFi");
+  }
 };
 
 void setup() {
@@ -48,7 +69,8 @@ void setup() {
       waterPlant(durationWatering*sToMilisec, loadPin);
       break;
     case ESP_SLEEP_WAKEUP_TIMER: 
-      waterPlant(durationWatering*sToMilisec, loadPin);
+      // waterPlant(durationWatering*sToMilisec, loadPin);
+      setupWiFi();
       Serial.print("TIMER\n"); break;
     default: Serial.print("DEFAULT\n"); break;
   };
