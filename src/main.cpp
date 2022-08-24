@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
+#include <NTPClient.h>
+#include "time.h"
+#include <string>
+#include <ostream>
 
 ////////////////////////////// PROGRAM CONSTANTS ///////////////////////////////
 // Declare the pins used
@@ -11,6 +15,12 @@ static const uint8_t touchPin = 27;
 static const int delayWatering = 30; // [s]
 // Desired watering time
 static const int durationWatering = 1; // [s]
+
+// NTP server to fetch date/time
+static const char* ntpServer = "pool.ntp.org";
+static const long UTC = -5;
+static const long gmtOffset = UTC*3600; // [s]
+static const int daylightOffset = 3600; // [s]
 
 // Constants
 static const int sToMilisec = 1000;
@@ -54,6 +64,7 @@ void resetWiFiCredentials() {
 };
 
 void checkWiFi() {
+  // ONLY USE TO TEST IF CURRENT CREDENTIALS CONNECTS THE ESP-32 TO DESIRED WiFi NETWORK
   // Set WiFi mode
   WiFi.mode(WIFI_STA);
   Serial.begin(9600);
@@ -67,10 +78,28 @@ void checkWiFi() {
   }
 }
 
-void getTime () {
+void getDay () {
   // Connect to WiFi network to get date and time info
-  // 
-  // Code here
+  // Set WiFi mode
+  WiFi.mode(WIFI_STA);
+  Serial.begin(9600);
+  // Local initialization
+  WiFiManager wm;
+  if (!wm.autoConnect()) {
+    Serial.print("Not connected to WiFi\n");
+    return;
+  }
+  else {
+    Serial.print("Connected to WiFi\n");
+    configTime(gmtOffset, daylightOffset, ntpServer);
+    struct tm timeinfo;
+    if(!getLocalTime(&timeinfo)){
+      Serial.println("Failed to obtain time\n");
+      return;
+    }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S\n");
+  return;
+  }
 };
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -98,9 +127,8 @@ void setup() {
       break;
     case ESP_SLEEP_WAKEUP_TIMER: 
       // Connect to WiFi every 24hrs to check the date and water plant if is goal date
-      // Right now, timer triggers WiFi setup
       Serial.print("TIMER\n");
-      checkWiFi();
+      getDay();
       break;
     // Any other wake up source triggers nothing - so that the plant is not watered
     // each time the ESP-32 is powered up after power loss
