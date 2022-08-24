@@ -85,7 +85,8 @@ void getDay () {
   Serial.begin(9600);
   // Local initialization
   WiFiManager wm;
-  if (!wm.autoConnect()) {
+  if (!wm.autoConnect()) { // add failsafe to delay/retry if connecting is a bit slow, right now if fails it opens configs and stays
+                           // there until ESP32 is turned off and on again
     Serial.print("Not connected to WiFi\n");
     return;
   }
@@ -98,8 +99,10 @@ void getDay () {
       return;
     }
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S\n");
-  return;
+  // instead of printing, return the tm (or just the day) to the setup() function
+  wm.disconnect();
   }
+  return;
 };
 ////////////////////////////////////////////////////////////////////////////////
 
