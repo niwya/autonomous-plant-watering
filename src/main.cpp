@@ -78,31 +78,31 @@ void checkWiFi() {
   }
 }
 
-void getDay () {
+struct tm getDay () {
   // Connect to WiFi network to get date and time info
   // Set WiFi mode
   WiFi.mode(WIFI_STA);
-  Serial.begin(9600);
+  Serial.begin(115200);
   // Local initialization
   WiFiManager wm;
-  if (!wm.autoConnect()) { // add failsafe to delay/retry if connecting is a bit slow, right now if fails it opens configs and stays
-                           // there until ESP32 is turned off and on again
+  if (!wm.autoConnect()) {
     Serial.print("Not connected to WiFi\n");
-    return;
+    delay(1000);
+    // If we can't connect to WiFi, restart ESP /!\ MIGHT NEED TO WAIT TIMER TO CALL THIS AGAIN > ISSUES
+    ESP.restart();
   }
-  else {
-    Serial.print("Connected to WiFi\n");
-    configTime(gmtOffset, daylightOffset, ntpServer);
-    struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)){
-      Serial.println("Failed to obtain time\n");
-      return;
-    }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S\n");
-  // instead of printing, return the tm (or just the day) to the setup() function
+  // If we get there, ESP-32 is connected to WiFi
+  Serial.print("Connected to WiFi\n");
+  configTime(gmtOffset, daylightOffset, ntpServer);
+  struct tm timeInfo;
+  if(!getLocalTime(&timeInfo)){
+    Serial.println("Failed to obtain time\n");
+    delay(1000);
+    ESP.restart();
+  }
+  Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S\n");
   wm.disconnect();
-  }
-  return;
+  return timeInfo;
 };
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -119,7 +119,7 @@ void setup() {
   esp_sleep_enable_touchpad_wakeup();
 
   // Wake up actions by wake up source
-  Serial.begin(9600); // Open serial monitor to check wake up reason
+  Serial.begin(115200); // Open serial monitor to check wake up reason
   delay(1000); // 1 second delay to allow the Serial Monitor to open
   esp_sleep_wakeup_cause_t wakeupSource = esp_sleep_get_wakeup_cause();
   switch(wakeupSource) {
