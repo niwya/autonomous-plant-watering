@@ -12,7 +12,7 @@ static const uint8_t loadPin = 32;
 static const uint8_t touchPin = 27;
 
 // Desired time between waterings
-static const int delayWatering = 30; // [s]
+static const int delayWatering = 10; // [s]
 // Desired watering time
 static const int durationWatering = 1; // [s]
 
@@ -42,10 +42,10 @@ void waterPlant(const int duration, const int pin){
 };
 
 void resetWiFiCredentials() {
-  // ONLY USE FOR FIRST SET UP ON A NEW WiFi NETWORK
+  // ONLY USE FOR FIRST SET UP ON A NEW WiFi NETWORK (TO INPUT AND STORE NEW CREDENTIALS)
   // Set WiFi mode
   WiFi.mode(WIFI_STA);
-  Serial.begin(9600);
+  Serial.begin(115200);
   // Local initialization
   WiFiManager wm;
   // Wipe stored credentials
@@ -67,7 +67,7 @@ void checkWiFi() {
   // ONLY USE TO TEST IF CURRENT CREDENTIALS CONNECTS THE ESP-32 TO DESIRED WiFi NETWORK
   // Set WiFi mode
   WiFi.mode(WIFI_STA);
-  Serial.begin(9600);
+  Serial.begin(115200);
   // Local initialization
   WiFiManager wm;
   if (!wm.autoConnect()) {
@@ -85,9 +85,10 @@ struct tm getDay () {
   Serial.begin(115200);
   // Local initialization
   WiFiManager wm;
+  wm.setConfigPortalTimeout(5); // waits 5 seconds and return 
   if (!wm.autoConnect()) {
     Serial.print("Not connected to WiFi\n");
-    delay(1000);
+    delay(3000);
     // If we can't connect to WiFi, restart ESP /!\ MIGHT NEED TO WAIT TIMER TO CALL THIS AGAIN > ISSUES
     ESP.restart();
   }
@@ -97,7 +98,7 @@ struct tm getDay () {
   struct tm timeInfo;
   if(!getLocalTime(&timeInfo)){
     Serial.println("Failed to obtain time\n");
-    delay(1000);
+    delay(3000);
     ESP.restart();
   }
   Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S\n");
@@ -118,6 +119,9 @@ void setup() {
   touchAttachInterrupt(touchPin, callback, 30);
   esp_sleep_enable_touchpad_wakeup();
 
+  // Declare the date/time storing variable
+  struct tm dayTime;
+
   // Wake up actions by wake up source
   Serial.begin(115200); // Open serial monitor to check wake up reason
   delay(1000); // 1 second delay to allow the Serial Monitor to open
@@ -131,11 +135,13 @@ void setup() {
     case ESP_SLEEP_WAKEUP_TIMER: 
       // Connect to WiFi every 24hrs to check the date and water plant if is goal date
       Serial.print("TIMER\n");
-      getDay();
+      dayTime = getDay();
       break;
-    // Any other wake up source triggers nothing - so that the plant is not watered
-    // each time the ESP-32 is powered up after power loss
-    default: Serial.print("DEFAULT\n"); break;
+    // Any other wake up source triggers checking the date/time and water if it's ok
+    default: 
+      Serial.print("DEFAULT\n");
+      dayTime = getDay();
+      break;
   };
 
   // Enter deep sleep mode
