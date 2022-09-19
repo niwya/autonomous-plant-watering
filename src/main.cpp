@@ -22,6 +22,11 @@ static const long UTC = -5;
 static const long gmtOffset = UTC*3600; // [s]
 static const int daylightOffset = 3600; // [s]
 
+// Storing the desired watering day(s)
+static char wateringDay[] = {"Friday"};
+
+// Storing the last watering that occured (if day + mo + yr is same then don't water)
+
 // Constants
 static const int sToMilisec = 1000;
 static const int sToMicrosec = 1000000;
@@ -78,7 +83,7 @@ void checkWiFi() {
   }
 }
 
-struct tm getDay () {
+tm getDay () {
   // Connect to WiFi network to get date and time info
   // Set WiFi mode
   WiFi.mode(WIFI_STA);
@@ -88,17 +93,17 @@ struct tm getDay () {
   wm.setConfigPortalTimeout(5); // waits 5 seconds and return 
   if (!wm.autoConnect()) {
     Serial.print("Not connected to WiFi\n");
-    delay(3000);
-    // If we can't connect to WiFi, restart ESP /!\ MIGHT NEED TO WAIT TIMER TO CALL THIS AGAIN > ISSUES
+    delay(1000);
+    // If we can't connect to WiFi, restart ESP
     ESP.restart();
   }
   // If we get there, ESP-32 is connected to WiFi
   Serial.print("Connected to WiFi\n");
   configTime(gmtOffset, daylightOffset, ntpServer);
-  struct tm timeInfo;
+  tm timeInfo;
   if(!getLocalTime(&timeInfo)){
     Serial.println("Failed to obtain time\n");
-    delay(3000);
+    delay(1000);
     ESP.restart();
   }
   Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S\n");
@@ -119,8 +124,8 @@ void setup() {
   touchAttachInterrupt(touchPin, callback, 30);
   esp_sleep_enable_touchpad_wakeup();
 
-  // Declare the date/time storing variable
-  struct tm dayTime;
+  // Declare the current date/time storing variable
+  tm dayTime;
 
   // Wake up actions by wake up source
   Serial.begin(115200); // Open serial monitor to check wake up reason
@@ -136,6 +141,9 @@ void setup() {
       // Connect to WiFi every 24hrs to check the date and water plant if is goal date
       Serial.print("TIMER\n");
       dayTime = getDay();
+      // if (true) { // TO CHANGE with checking if the previous watering is default time
+      //   // Serial.println(&previousWatering, "%A, %B %d %Y %H:%M:%S\n");
+      // }
       break;
     // Any other wake up source triggers checking the date/time and water if it's ok
     default: 
