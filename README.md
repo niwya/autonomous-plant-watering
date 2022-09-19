@@ -8,7 +8,9 @@
 - [ ] Figure out how to store last watering date and default value (SPIFFS or NVS or RTC RAM)
 
 :heavy_check_mark: SPIFFS: might be the best bet to store day-month-year, updated after each watering so not so frequently + does wear leveling + is the most reliable
+
 :x: NVS: might conflict with how WiFi credentials are stored using WiFi Manager
+
 :x: RTC RAM: is wiped when need to restart with ESP.restart() when WiFi connection attempts times out
 
 - [ ] Solder all electronic components
